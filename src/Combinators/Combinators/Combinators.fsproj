@@ -1,0 +1,72 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp2.2</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="Combinators.fs" />
+        <Compile Include="DivideConquer.fs" />
+        <Compile Include="ForkJoin.fs" />
+        <Compile Include="Library.fs" />
+        <Compile Include="RequestGate.fs" />
+        <Compile Include="Program.fs" />
+        <Compile Include="TaskBuilder.fs" />
+        <Compile Include="Utilities.fs" />
+        <Compile Include="Atom.fs" />
+        <Compile Include="Memoize.fs" />
+        <Compile Include="ParallelSIMD.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="StructureHelpers\OptionEx.fs" />
+      <Compile Include="StructureHelpers\ResultEx.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="TaskEx\TaskCombinators.fs" />
+      <Compile Include="TaskEx\TaskExtensions.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="AsyncEx\AsyncCombinators.fs" />
+      <Compile Include="AsyncEx\AsyncExtensions.fs" />
+      <Compile Include="AsyncEx\AsyncBuilder.fs" />
+      <Compile Include="AsyncEx\AsyncStream.fs" />
+      <Compile Include="AsyncEx\AsyncResult.fs" />
+      <Compile Include="AsyncEx\AsyncOption.fs" />
+      <Compile Include="AsyncEx\AsyncArrow.fs" />
+      <Compile Include="AsyncEx\ParallelHeterogeneousAsync.fs" />
+      <Compile Include="AsyncEx\AsyncChoice.fs" />
+      <Compile Include="AsyncEx\CallCC.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="AgentEx\AgentPipe.fs" />
+      <Compile Include="AgentEx\AgentMB.fs" />
+      <Compile Include="AgentEx\AgentUtils.fs" />
+      <Compile Include="AgentEx\BlockingQueueAgent.fs" />
+      <Compile Include="AgentEx\ThrottlingAgent.fs" />
+      <Compile Include="AgentEx\AgentMapReduce.fs" />
+      <Compile Include="AgentEx\AgentParDegree.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="EventEx\EventCombinators.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="AsyncHandler.fsx" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="Examples\Samples.fsx" />
+      <None Include="Examples\SlideExamples.fsx" />
+    </ItemGroup>
+
+</Project>
