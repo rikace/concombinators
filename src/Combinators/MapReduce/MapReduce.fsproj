@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="ParallelSeq.fs" />
         <Compile Include="KMeans.Data.fs" />
         <Compile Include="KMeans.FsPSeq.fs" />
         <Compile Include="MapReduce.FsPSeq.fs" />

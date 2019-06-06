@@ -5,6 +5,7 @@ module AsyncHandler =
 
     open System
     open Combinators.StructureHelpers.ResultEx
+    open Combinators.AsyncEx.AsyncCombinators
     
     [<NoComparison;NoEquality>]    
     type AsyncResult<'a> = | AR of Async<Result<'a, exn>>    

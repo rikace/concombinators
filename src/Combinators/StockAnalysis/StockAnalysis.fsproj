@@ -12,7 +12,6 @@
         <Compile Include="..\Common\Helpers.FSharp\AsyncResult.fs">
           <Link>AsyncResult.fs</Link>
         </Compile>
-        <Compile Include="CloudAsyncops.fs" />
         <Compile Include="StockAnalyzer.fs" />
         <Compile Include="StockAnalysis.fs" />
         <Compile Include="Program.fs" />

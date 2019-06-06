@@ -2,16 +2,16 @@ module Combinators.AsyncEx.AsyncStream
 
 // [snippet:Declaration of asynchronous sequence]
 open System.IO
+open Combinators.AsyncEx.AsyncCombinators
 
 /// Represents a sequence of values 'T where items 
 /// are generated asynchronously on-demand
-type AsyncSeq<'T> = Async<AsyncSeqInner<'T>> 
-and AsyncSeqInner<'T> =
+type AsyncStream<'T> = Async<AsyncStreamInner<'T>> 
+and AsyncStreamInner<'T> =
   | Ended
-  | Item of 'T * AsyncSeq<'T>
-// [/snippet]
+  | Item of 'T * AsyncStream<'T>
 
-// [snippet:Using asynchronous sequences]
+
 /// Read file 'fn' in blocks of size 'size'
 /// (returns on-demand asynchronous sequence)
 let readInBlocks fn size = async {
@@ -32,7 +32,7 @@ let readInBlocks fn size = async {
   return! nextBlock() }
 
 
-An asynchronous sequence is similar to the seq type, but the elements of the sequence are generated asynchronously without blocking the caller as in Async. This snippet declares asynchronous sequence and uses it to compare two files in 1k block
+
 
 
 /// Asynchronous function that compares two asynchronous sequences

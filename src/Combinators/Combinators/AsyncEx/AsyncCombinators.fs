@@ -1,12 +1,32 @@
 module Combinators.AsyncEx.AsyncCombinators
 
-    
+open Combinators.StructureHelpers.ResultEx
+
 [<RequireQualifiedAccess>]
 module Async =
     open System
     open System.Threading 
     open System.Threading.Tasks
-    //open AsyncModule
+
+    let thenTask (input : Task<'T>, binder : 'T -> Task<'U>) =  
+        let tcs = new TaskCompletionSource<'U>()
+        input.ContinueWith((fun (task:Task<'T>) ->
+           if (task.IsFaulted) then
+                tcs.SetException(task.Exception.InnerExceptions)
+           elif (task.IsCanceled) then tcs.SetCanceled()
+           else
+                try
+                    (binder(task.Result)).ContinueWith((fun (nextTask:Task<'U>) ->
+                        if nextTask.IsFaulted then tcs.SetException(nextTask.Exception.InnerException)
+                        elif nextTask.IsCanceled then tcs.SetCanceled()
+                        else
+                            tcs.SetResult(nextTask.Result))
+                            ,TaskContinuationOptions.ExecuteSynchronously) |> ignore  
+                with
+                | ex -> tcs.SetException(ex)), TaskContinuationOptions.ExecuteSynchronously) |> ignore
+        tcs.Task
+        
+
     
     let unit = async.Zero ()
     // x:'a -> Async<'a>
@@ -144,8 +164,7 @@ module Async =
         let folder head tail = 
             retn cons <*> (f head) <*> tail
         List.foldBack folder list initState              
-        
-        here
+     
         
     let parallelCatch (computations : seq<Async<'a>>) =
         computations
@@ -158,6 +177,15 @@ module Async =
         let folder x xs = retn (fun x xs -> x :: xs) <*> f x <*> xs
         List.foldBack folder list (retn []) 
 
+
+    let rec tryFind (f : 'T -> Async<bool>) (ts : 'T list) = async {
+        match ts with
+        | [] -> return None
+        | head :: tail ->
+            let! r = f head
+            if r then return Some head
+            else return! tryFind f tail
+    }
 
 module AsyncOperators =
     // ( <*> ) : f:Async<('a -> 'b)> -> m:Async<'a> -> Async<'b>

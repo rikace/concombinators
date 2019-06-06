@@ -1,7 +1,5 @@
 module Combinators.AgentEx.AgentMB
 
-namespace FsharpFSharp.Parallelx.AgentEx
-
 open System
 open System.Collections.Generic
 

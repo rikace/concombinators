@@ -173,6 +173,13 @@ module rec AsyncOperators =
 
         let map (map : 'a -> 'b) (value : Async<'a>) : Async<'b> = async.Bind(value, map >> async.Return)
 
+        let orElse (fallBack : unit -> Async<'a>) (op : Async<'a>) = async {
+            let! k = op |> Async.Catch
+            match k with
+            | Choice1Of2 res -> return res
+            | Choice2Of2 _ -> return! fallBack()
+        }
+           
         // (('a -> 'b) -> Async<'a> -> Async<'b>)
         let (<!>) = map
 

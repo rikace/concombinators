@@ -3,17 +3,20 @@ module Combinators.TaskEx.TaskCombinators
 open System
 open System.Threading
 open System.Threading.Tasks
-open System.Collections.Generic
-open System.Collections.Concurrent
 open FSharp.Parallelx
-
-open System.Threading.Tasks
 open FSharp.Parallelx.ContextInsensitive
 
-
-[<RequireQualifiedAccess>]
 module TaskV2 =
-  let singleton value = value |> Task.FromResult
+  let fork (f : 'a -> Task<'a>) =
+        fun x -> task {
+        return! f x
+    }
+        
+  let span (f : Task<'a>) = task {        
+        return! f 
+    }
+  
+  let retn value = value |> Task.FromResult
 
   let bind (f : 'a -> Task<'b>) (x : Task<'a>) = task {
       let! x = x
@@ -22,17 +25,36 @@ module TaskV2 =
 
   let apply f x =
     bind (fun f' ->
-      bind (fun x' -> singleton(f' x')) x) f
+      bind (fun x' -> retn(f' x')) x) f
+  
+  let map f x = x |> bind (f >> retn)
 
-  let map f x = x |> bind (f >> singleton)
-
+  // ('a -> 'b -> 'c) -> Task<'a> -> Task<'b> -> Task<'c>
   let map2 f x y =
-    (apply (apply (singleton f) x) y)
+    (apply (apply (retn f) x) y)
 
   let map3 f x y z =
     apply (map2 f x y) z
 
     
+    
+  let orElse (fallBack : exn -> Task<'a>) (op : Task<'a>) = task {
+        let! k = op.ContinueWith(fun (t : Task<'a>) ->
+            if t.Status = TaskStatus.Faulted then
+                fallBack(t.Exception)
+            else Task.FromResult(t.Result))
+        return! k
+        }
+  
+  let bimap' (successed : 'a -> 'b) (faulted : exn -> 'b) (op : Task<'a>) = task {
+    return!
+        op
+        |> map successed
+        |> orElse (fun ex -> faulted ex |> Task.FromResult)
+  }
+
+
+
 [<RequireQualifiedAccess>]
 module Task =
         
@@ -157,95 +179,35 @@ module TaskResult =
                    | Error err -> tcs.SetResult(Result.Error(err))
            )) |> ignore
        tcs.Task |> TR
-       
-       
-
-       
-            public static Task<TSource> Where<TSource>(this Task<TSource> source, Func<TSource, bool> predicate)
-        {
-            // Validate arguments
-            if (source == null) throw new ArgumentNullException("source");
-            if (predicate == null) throw new ArgumentNullException("predicate");
-
-            // Create a continuation to run the predicate and return the source's result.
-            // If the predicate returns false, cancel the returned Task.
-            var cts = new CancellationTokenSource();
-            return source.ContinueWith(t =>
-            {
-                var result = t.Result;
-                if (!predicate(result)) cts.CancelAndThrow();
-                return result;
-            }, cts.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default);
-        }
-        
-        
-        
-              public static Task<T> OrElse<T>
-         (this Task<T> task, Func<Task<T>> fallback)
-         => task.ContinueWith(t =>
-               t.Status == TaskStatus.Faulted
-                  ? fallback()
-                  : Task.FromResult(t.Result)
-            )
-            .Unwrap();
-
-
-      public static Task<T> Recover<T>
-         (this Task<T> task, Func<Exception, T> fallback)
-         => task.ContinueWith(t =>
-               t.Status == TaskStatus.Faulted
-                  ? fallback(t.Exception)
-                  : t.Result);
-
-      public static Task<T> RecoverWith<T>
-         (this Task<T> task, Func<Exception, Task<T>> fallback)
-         => task.ContinueWith(t =>
-               t.Status == TaskStatus.Faulted
-                  ? fallback(t.Exception)
-                  : Task.FromResult(t.Result)
-         ).Unwrap();
-         
-         
-         
-      static Func<IEnumerable<T>, T, IEnumerable<T>> Append<T>()
-         => (ts, t) => ts.Append(t);
-
-      // Task
-      
-      // applicative traverse
-      public static Task<IEnumerable<R>> TraverseA<T, R>
-         (this IEnumerable<T> ts, Func<T, Task<R>> f)
-         => ts.Aggregate(
-            seed: Task.FromResult(Enumerable.Empty<R>()),
-            func: (rs, t) => Task.FromResult(Append<R>())
-                                   .Apply(rs)
-                                   .Apply(f(t)));
-
-      // by default use applicative traverse (parallel, hence faster)
-      public static Task<IEnumerable<R>> Traverse<T, R>(this IEnumerable<T> list, Func<T, Task<R>> func) => TraverseA(list, func);
-
-      // monadic traverse
-      public static Task<IEnumerable<R>> TraverseM<T, R>
-         (this IEnumerable<T> ts, Func<T, Task<R>> func)
-         => ts.Aggregate(
-            seed: Task.FromResult(Enumerable.Empty<R>()),
-            // Task<[R]> -> T -> Task<[R]>
-            func: (taskRs, t) => from rs in taskRs
-                                 from r in func(t)
-                                 select rs.Append(r));
+    
+   // recover
+   let orElse (fallBack : unit -> Task<'a>) (op : Task<'a>) = task {
+        let! k =
+            op.ContinueWith(fun (t: Task<'a>) ->
+                if t.Status = TaskStatus.Faulted then fallBack()
+                else Task.FromResult(t.Result))
+        return! k
+    }
+   
+   let rec retry (retries : int) (delayMillis : int) (op : unit -> Task<_>) = task {
+        match retries with
+        | 0 -> return! op()
+        | n -> return! op() |> orElse (fun () -> task {
+            do! Task.Delay delayMillis
+            return! retry (n - 1) delayMillis op
+        })
    }
-   
-   
-         public static Task<Option<R>> Traverse<T, R>
-         (this Option<T> @this, Func<T, Task<R>> func)
-         => @this.Match(
-               None: () => Async((Option<R>)None),
-               Some: t => func(t).Map(Some)
-            );
+       
 
-      public static Task<Option<R>> TraverseBind<T, R>(this Option<T> @this
-         , Func<T, Task<Option<R>>> func)
-         => @this.Match(
-               None: () => Async((Option<R>)None),
-               Some: t => func(t)
-            );       
+   let filter (source : Task<'a>, predicate : 'a -> bool) = task {
+        // Create a continuation to run the predicate and return the source's result.
+        // If the predicate returns false, cancel the returned Task.
+        let cts = new CancellationTokenSource()
+        return source.ContinueWith((fun (t : Task<_>) ->
+                let result = t.Result;
+                if predicate(result) then
+                    cts.Cancel()
+                    raise (exn "task cancelled")
+                else result
+            ), cts.Token, TaskContinuationOptions.NotOnCanceled, TaskScheduler.Default)
+   }

@@ -57,7 +57,7 @@ let links =
 let Download(url : Uri) =
     async {
         let client = new WebClient()
-        let! html = client.AsyncDownloadString(url)
+        let! html = client.DownloadStringTaskAsync(url) |> Async.AwaitTask
         return html
     }
 
@@ -118,57 +118,3 @@ let reduceF (left : (string * int) list) (right : (string * int) list) =
 mapReduce mapF reduceF links
 |> Async.RunSynchronously
 |> List.sortBy (fun (_, count) -> -count) 
-
-// A balanced binary-tree representation of the parallel execution of mapReduce
-//           r
-//          / \
-//         /   \
-//        /     \
-//       /       \
-//      /         \
-//     r           r
-//    /\          /\
-//   /  \        /  \
-//  /    \      /    \
-// f a1  f a2  f a3  f a4
-
-
-//(|f ,⊗|)
-let mapReduce (mapF : 'T -> Async<'R>) (reduceF : 'R -> 'R -> Async<'R>) (input : 'T []) : Async<'R> = 
-    let rec mapReduce' s e =
-        async { 
-            if s + 1 >= e then return! mapF input.[s]
-            else 
-                let m = (s + e) / 2
-                let! (left, right) =  mapReduce' s m <||> mapReduce' m e
-                return! reduceF left right
-        }
-    mapReduce' 0 input.Length
-
-
-// Example: the classic map/reduce word-count
-
-let mapF uri =
-    async {
-        let! text = Download(new Uri(uri))
-        let words = text.Split([|' '; '.'; ','|], StringSplitOptions.RemoveEmptyEntries)
-        return 
-            words 
-            |> Seq.map (fun word -> word.ToUpper())
-            |> Seq.filter (fun word -> not (noiseWords |> Seq.exists (fun noiseWord -> noiseWord.ToUpper() = word)) && Seq.length word > 3)
-            |> Seq.groupBy id 
-            |> Seq.map (fun (key, values) -> (key, values |> Seq.length)) |> Seq.toList
-    }
-
-let reduceF (left : (string * int) list) (right : (string * int) list) = 
-    async {
-        return 
-            left @ right 
-            |> Seq.groupBy fst 
-            |> Seq.map (fun (key, values) -> (key, values |> Seq.sumBy snd)) 
-            |> Seq.toList
-    }
-
-mapReduce mapF reduceF links
-|> Async.RunSynchronously
-|> List.sortBy (fun (_, count) -> -count)         

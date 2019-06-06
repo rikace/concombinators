@@ -4,7 +4,7 @@ open System
 open System.Threading
 open System.Threading.Tasks
 open System.Collections.Concurrent
-open FSharp.Parallelx.AsyncEx
+open Combinators.AsyncEx.AsyncCombinators
 
 // A function which produces an async computation as output.
 //type AsyncArrow<'a, 'b> = 'a -> Async<'b>

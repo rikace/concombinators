@@ -1,12 +1,18 @@
-
-#load "TaskBuilder.fs"
-#load "Samples.fsx"
+module SlideExamples
 
 open System
 open System.Collections
 open System.Threading
 open System.Threading.Tasks
-open FSharp.Control.Tasks.V2
+open FSharp.Parallelx.ContextInsensitive
+open Combinators.TaskEx.TaskCombinators
+
+
+
+
+
+
+
 
 module SerivceCurrencyOne =
     let getRate (ccy : string ) = Task.FromResult 0
@@ -19,7 +25,7 @@ module SerivceCurrencyTwo =
 // which takes a task and a fallback to use in case the task fails”
 
 
-let orElse (fallBack : unit -> Task<'a>) (op : Task<'a>) = task {
+let orElse (fallBack : exn -> Task<'a>) (op : Task<'a>) = task {
     let! k = op.ContinueWith(fun (t : Task<'a>) ->
         if t.Status = TaskStatus.Faulted then
             fallBack()
@@ -27,9 +33,9 @@ let orElse (fallBack : unit -> Task<'a>) (op : Task<'a>) = task {
     return! k
     }
 
-let ccy = ""
+let ccy = "AAPL"
 
-let r = SerivceCurrencyOne.getRate(ccy) |> orElse (fun () -> SerivceCurrencyTwo.getRate ccy)
+let r = SerivceCurrencyOne.getRate(ccy) |> orElse (fun _ -> SerivceCurrencyTwo.getRate ccy)
 
 let recover (fallback : exn -> 'a) (op : Task<'a>) = task{
     return! op.ContinueWith(fun (t : Task<'a>) ->
@@ -44,13 +50,12 @@ let getRate =
     |> Task.map (fun rate -> printfn "The rate is %d" rate)
     |> recover (fun ex -> printfn "Error : %s" ex.Message)
     
-    
-let bimap (successed : 'a -> 'b) (faulted : exn -> 'b) (op : Task<'a>) = task {
-    return! op.ContinueWith(fun (t : Task<'a>) ->
-        if t.Status = TaskStatus.Faulted then
-            faulted t.Exception
-        else successed t.Result)    
-    }
+
+let bimap (successed : 'a -> 'b) (faulted : exn -> 'b) (op : Task<'a>) = task {   
+    return! op.ContinueWith(fun (t : Task<'a>) ->       
+        if t.Status = TaskStatus.Faulted then   
+            faulted t.Exception    
+        else successed t.Result)        } 
 
 let getRate =
     SerivceCurrencyOne.getRate ""
@@ -58,17 +63,16 @@ let getRate =
              (fun ex -> printfn "Error : %s" ex.Message)
              
              
-[<HttpGet("translate/{amount}/{from}/{to}")>]
-let translate (amount : decimal, from : string, to : string) = task {
-    let ccy = from + to
-    return! 
-        SerivceCurrencyOne.getRate(ccy)
-        |> orElse (fun () -> SerivceCurrencyTwo.getRate ccy)
-        |> Task.map (fun rate -> amount * rate)
-        |> Task.bimap (fun result -> StatusCode.Ok result)
-                      (fun ex -> StatusCode(500, ex))
-    
-}
+//[<HttpGet("translate/{amount}/{from}/{to}")>]
+//let translate (amount : decimal, from : string, to : string) = task {
+//    let ccy = from + to
+//    return! 
+//        SerivceCurrencyOne.getRate(ccy)
+//        |> orElse (fun () -> SerivceCurrencyTwo.getRate ccy)
+//        |> Task.map (fun rate -> amount * rate)
+//        |> Task.bimap (fun result -> StatusCode.Ok result)
+//                      (fun ex -> StatusCode(500, ex))
+//}
 
 let rec retry (retries :int) (delayMillis : int) (op : unit -> Task<_>) = task {
     match retries with
@@ -314,91 +318,3 @@ module PuralyParallel =
     }
             
 
-    // Message type used by the agent - contains queueing 
-    // of work items and notification of completion 
-    type internal ThrottlingAgentMessage<'a> =
-      | Completed of 'a
-      | Work of Async<'a>
-      | Progress of 'a
-        
-        
-    (*
-    Agent that can be used for controlling the number of concurrently executing asynchronous workflows.
-    The agent runs a specified number of operations concurrently and queues remaining pending requests.
-    The queued work items are started as soon as one of the previous items completes.
-    *)    
-        
-    let map (degree : int) (lst : Async<'a> list) (f : 'a -> 'a) = 
-        /// Represents an agent that runs operations in concurrently. When the number
-        /// of concurrent operations exceeds 'degree', they are queued and processed later
-        let agent = MailboxProcessor.Start(fun agent -> 
-
-            /// Represents a state when the agent is blocked
-            let rec waiting state index = 
-              // Use 'Scan' to wait for completion of some work
-              agent.Scan(function
-                | Progress res -> Some(working (degree - 1) index (Some(f state res)))
-                | _ -> None)
-
-            /// Represents a state when the agent is working
-            and working count index state = async { 
-              // Receive any message 
-              let! msg = agent.Receive()
-              match msg with 
-              | Progress res -> 
-                  // Decrement the counter of work items
-                  let newState =
-                      match state with
-                      | None -> Some res
-                      | Some s -> f s res |> Some
-                  
-                  return! working (count - 1) (index + 1) newState
-              | Work work ->
-                  // Start the work item & continue in blocked/working state
-                  async { let! result = work
-                          agent.Post (Progress result) }
-                  |> Async.Start
-                  if count < degree - 1 then return! working (count + 1) (index + 1) state
-                  else return! waiting state index }
-
-            // Start in working state with zero running work items
-            working 0 0 None)      
-        
-        lst |> List.iter (fun work -> agent.Post(Work work))
-      
-      
-
-
-        
-//    
-//    let rec sumRec depth (ints : int list) = task {
-//        match ints with
-//        | [] -> return fun () -> 0
-//        | lst ->
-//            let left, right = ints |> List.splitAt (lst.Length / 2)
-//            if depth < 0 then 
-//                let! left  = sumRec depth left  
-//                let! right = sumRec depth right   
-//                return left + right
-//            else
-//                let left  = sumRec (depth - 1) left |> fork 
-//                let right = sumRec (depth - 1) right |> fork  
-//                return! map2 (+) left right }    
-//    
-    
-//    let rec quicksortParallelWithDepth depth aList =    // #A
-//    match aList with
-//    | [] -> []
-//    | firstElement :: restOfList ->
-//        let smaller, larger =
-//            List.partition (fun number -> number > firstElement) restOfList
-//        if depth < 0 then   // #B
-//            let left  = quicksortParallelWithDepth depth smaller  //#C
-//            let right = quicksortParallelWithDepth depth larger   //#C
-//            left @ (firstElement :: right)
-//        else
-//            let left  = Task.Run(fun () -> quicksortParallelWithDepth (depth - 1) smaller) // #D
-//            let right = Task.Run(fun () -> quicksortParallelWithDepth (depth - 1) larger)  // #D
-//            left.Result @ (firstElement :: right.Result)
-    
-    

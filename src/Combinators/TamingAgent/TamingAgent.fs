@@ -61,7 +61,7 @@ type TamingAgent<'T, 'R>(limit, operation:'T -> Async<'R>) =
     member x.Subscribe(action) = jobCompleted.Publish |> Observable.subscribe(action)
 
 ////////////////////////////////////////////////
-//  Test Taming Agent
+//  Example Taming Agent
 ////////////////////////////////////////////////
 let urls =
     [ "http://www.live.com";

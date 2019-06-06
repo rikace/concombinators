@@ -4,41 +4,11 @@ open System
 open System.Threading 
 open System.Threading.Tasks
 open System.Reactive
-open Combinators.ResultEx
-open Combinators.AsyncEx
-open Combinators.Tasks
-open Combinators.OptionEx
+open Combinators.StructureHelpers.OptionEx
+open Combinators.StructureHelpers.ResultEx
+open Combinators.AsyncEx.AsyncCombinators
+open Combinators.TaskEx.TaskCombinators
 
-//    [<RequireQualifiedAccess>]
-//    module Inference =
-//        type Defaults =
-//            | Defaults
-//            static member Asyncs (x:Async<_>) = x
-//            static member Asyncs (x:System.Threading.Tasks.Task<_>) = Async.AwaitTask x
-//        
-//        let inline defaults (a: ^a, _: ^b) =
-//            ((^a or ^b) : (static member Asyncs: ^a -> Async<_>) a)
-//        
-//        let inline infer (x: ^a) = defaults (x, Defaults)
-//    let inline infer v = Inference.infer v
-
-//        let inline (<!>) f x = Async.map f x
-//        let inline (<*>) f x = Async.apply f x
-//        let inline (>>=) x f = Async.bind f x
-//        let inline (>=>) (f:'a -> Async<'b>) (g:'b -> Async<'c>) (x:'a) = (f x) >>= g
-//
-//        // fAsync:('a -> Async<'b>) -> gAsync:('b -> Async<'c>) -> arg:'a -> Async<'c>
-//        let inline (>==>) fAsync gAsync arg = async {
-//            let! f = Async.StartChild (fAsync arg)
-//            let! result = f
-//            return! gAsync result
-//        }
-//
-//        let compose a b = a >=> b
-
-//  let inline (<!>) f x = Result.map f x
-//  let inline (<*>) f x = Result.apply f x
-//  let inline (>>=) x f = Result.bind f x
 
 
 // The combination of bind and return are considered even more powerful than apply and return,
@@ -106,42 +76,3 @@ module Bind_vs_Apply_vs_Map =
     let (<||>) funcA funcB = OR funcA funcB
     
     
-//[<AutoOpen>]
-//module AsyncResultCombinators =
-//
-//    let inline AND (funcA:AsyncResult<'a>) (funcB:AsyncResult<'a>) : AsyncResult<_> =
-//        asyncResult {
-//                let! a = funcA
-//                let! b = funcB
-//                return (a, b)
-//        }
-//    let inline OR (funcA:AsyncResult<'a>) (funcB:AsyncResult<'a>) : AsyncResult<'a> =
-//        asyncResult {
-//            return! funcA
-//            return! funcB
-//        }
-//
-//    // funcA:AsyncResult<'a> -> funcB:AsyncResult<'a> -> AsyncResult<'a * 'a>
-//    let (<&&>) (funcA:AsyncResult<'a>) (funcB:AsyncResult<'a>) = AND funcA funcB
-//    // funcA:AsyncResult<'a> -> funcB:AsyncResult<'a> -> AsyncResult<'a>
-//    let (<||>) (funcA:AsyncResult<'a>) (funcB:AsyncResult<'a>) = OR funcA funcB
-//
-//    let gt value (ar:AsyncResult<'a>) =
-//        asyncResult {
-//            let! result = ar
-//            return result > value
-//        }
-//
-//    let (<|||>) (funcA:AsyncResult<bool>) (funcB:AsyncResult<bool>) =
-//        asyncResult {
-//            let! rA = funcA
-//            match rA with
-//            | true -> return! funcB
-//            | false -> return false
-//        }
-//
-//    let (<&&&>) (funcA:AsyncResult<bool>) (funcB:AsyncResult<bool>) =
-//        asyncResult {
-//            let! (rA, rB) = funcA <&&> funcB
-//            return rA && rB
-//        }

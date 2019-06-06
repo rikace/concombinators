@@ -8,6 +8,13 @@ open System.Threading
 [<AutoOpen>]
 module Utilities =
     
+    let synchronize f = 
+      let ctx = System.Threading.SynchronizationContext.Current 
+      f (fun g arg ->
+          let nctx = System.Threading.SynchronizationContext.Current 
+          if ctx <> null && ctx <> nctx then ctx.Post((fun _ -> g(arg)), null)
+          else g(arg) )    
+    
     let charDelimiters = [0..256] |> Seq.map(char)|> Seq.filter(fun c -> Char.IsWhiteSpace(c) || Char.IsPunctuation(c)) |> Seq.toArray
 
     /// Transforms a function by flipping the order of its arguments.
@@ -115,13 +122,7 @@ module Utilities =
         | []    -> acc
         | x::xs -> f acc x (fun lacc -> foldk f lacc xs)
         
-    let synchronize f = 
-        let ctx = System.Threading.SynchronizationContext.Current 
-        f (fun g arg ->
-            let nctx = System.Threading.SynchronizationContext.Current 
-            if ctx <> null && ctx <> nctx then ctx.Post((fun _ -> g(arg)), null)
-            else g(arg) )        
-            
+        
     module StreamHelpers =
         open System.IO
         open System.IO.Compression

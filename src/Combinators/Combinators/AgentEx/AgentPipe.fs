@@ -4,7 +4,8 @@ module AgentPipe =
     open System
     open System.Threading
     open System.Threading.Tasks
-
+    open Combinators.AgentEx.AgentUtils
+    
     /// Message type used by the agent - contains queueing
     /// of work items and notification of completion
     type JobRequest<'T, 'R> =

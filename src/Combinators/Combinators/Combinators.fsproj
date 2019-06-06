@@ -6,21 +6,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Combinators.fs" />
-        <Compile Include="DivideConquer.fs" />
-        <Compile Include="ForkJoin.fs" />
-        <Compile Include="Library.fs" />
-        <Compile Include="RequestGate.fs" />
-        <Compile Include="Program.fs" />
         <Compile Include="TaskBuilder.fs" />
         <Compile Include="Utilities.fs" />
         <Compile Include="Atom.fs" />
         <Compile Include="Memoize.fs" />
+        <Compile Include="DivideConquer.fs" />
+        <Compile Include="ForkJoin.fs" />
+        <Compile Include="Library.fs" />
+        <Compile Include="RequestGate.fs" />
         <Compile Include="ParallelSIMD.fs" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="System.Collections.Immutable" Version="1.5.0" />
+      <PackageReference Include="System.Reactive" Version="4.1.5" />
+      <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.9.0" />
     </ItemGroup>
 
     <ItemGroup>
@@ -47,9 +47,9 @@
     </ItemGroup>
 
     <ItemGroup>
+      <Compile Include="AgentEx\AgentUtils.fs" />
       <Compile Include="AgentEx\AgentPipe.fs" />
       <Compile Include="AgentEx\AgentMB.fs" />
-      <Compile Include="AgentEx\AgentUtils.fs" />
       <Compile Include="AgentEx\BlockingQueueAgent.fs" />
       <Compile Include="AgentEx\ThrottlingAgent.fs" />
       <Compile Include="AgentEx\AgentMapReduce.fs" />
@@ -58,15 +58,16 @@
 
     <ItemGroup>
       <Compile Include="EventEx\EventCombinators.fs" />
+      <Compile Include="EventEx\DataStreams.fs" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Include="AsyncHandler.fsx" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <None Include="Examples\Samples.fsx" />
+      <Compile Include="Combinators.fs" />
+      <Compile Include="Examples\SumNumbers.fs" />
+      <Compile Include="Examples\AsyncHandler.fs" />
+      <Compile Include="Examples\Samples.fs" />
       <None Include="Examples\SlideExamples.fsx" />
+      <Compile Include="Program.fs" />
     </ItemGroup>
 
 </Project>

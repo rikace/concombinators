@@ -19,7 +19,7 @@ let getStockHistory symbol (days:int) =
         let startDate = DateTime.Now - TimeSpan.FromDays((float)days)
         return
             data
-            |> Seq.filter (fun x -> x.date > startDate)
+            //|> Seq.filter (fun x -> x.date > startDate)
             |> Seq.sortBy (fun x -> x.date)
             |> Seq.map (fun x -> x.close)
             |> Seq.toArray
@@ -35,6 +35,7 @@ let analyzeHistoricalTrend symbol =
 // --------------- Transaction estimation ------------------------
 
 let mutable bankAccount = 500.0 + float(rnd.Next(1000))
+let rndIndex = Random()
 
 let getAmountOfMoney() =
     async {
@@ -61,18 +62,28 @@ let getCurrentPrice symbol =
         return data.[0].open'
     }
 
-let getStockIndex index =
-    async {
-        let url = sprintf "http://download.finance.yahoo.com/d/quotes.csv?s=%s&f=snl1" index
+let getData (url : string) = async {
         let req = WebRequest.Create(url)
         let! resp = req.AsyncGetResponse()
         use reader = new StreamReader(resp.GetResponseStream())
         return! reader.ReadToEndAsync()
     }
+
+let getStockIndex' (index : string) =
+    (getData (sprintf "https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol=%s&outputsize=full&apikey=XC1HAECLPHJP7TO2&datatype=csv" index))
+    |> Async.orElse (fun () -> getData (sprintf "http://download.finance.yahoo.com/d/quotes.csv?s=%s&f=snl1" index))
     |> Async.map (fun (row:string) ->
-        let items = row.Split(',')
+        let items = row.Split(',')        
         Double.Parse(items.[items.Length-1]))
     |> AsyncResult.handler
+    
+let getStockIndex (index : string) =
+    async {
+        return rndIndex.Next(5000, 12000) |> string
+    }
+    |> Async.map (fun (item : string) ->     
+        Double.Parse(item))
+    |> AsyncResult.handler    
 
 let calcTransactionAmount amount (price:float) =
     let readyToInvest = amount * 0.75
@@ -95,14 +106,15 @@ let run analyze stockId =
         | Ok (total) -> printfn "I recommend to buy %d unit" total
         | Error (e) -> printfn "I do not recommend to buy now"
 
-run howMuchToBuy "MSFT"
-// ----- Composing asynchronous logical operations with  custom async combinators
+
+// Composing asynchronous logical operations with  custom async combinators
 
 let doInvest stockId =
     let shouldIBuy =
         (   (getStockIndex "^IXIC" |> gt 6200.0)
             <|||>
-            (getStockIndex "^NYA" |> gt 11700.0 ))
+            (getStockIndex "^NYA" |> gt 11700.0 )
+        )
         <&&&> ((analyzeHistoricalTrend stockId) |> gt 10.0)
         |> AsyncResult.defaultValue false
 
@@ -112,9 +124,9 @@ let doInvest stockId =
             let! result = withdraw (price*float(amount))
             return result |> Result.bimap (fun x -> if x then amount else 0) (fun _ -> 0)
         }
+        
     Async.ifAsync shouldIBuy
         (buy <!> (howMuchToBuy stockId))
         (Async.retn <| Error(Exception("Do not do it now")))
     |> AsyncResult.handler
-
 

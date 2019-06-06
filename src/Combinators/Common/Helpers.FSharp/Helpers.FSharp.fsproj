@@ -24,7 +24,6 @@
     <Compile Include="Utils.fs" />
     <Compile Include="ImageHandler.fs" />
     <Compile Include="ParallelHelpers.fs" />
-    <Compile Include="ParallelSeq.fs" />
     <Compile Include="AsyncInterop.fs" />
     <Compile Include="JaroWinkler.fs" />
     <Compile Include="Interop.fs" />

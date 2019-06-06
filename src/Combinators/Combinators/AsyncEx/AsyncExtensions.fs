@@ -6,7 +6,9 @@ open System.Threading
 open System.Threading.Tasks
 open System.Runtime.CompilerServices
 open FSharp.Parallelx
- 
+open Combinators.AsyncEx.AsyncCombinators
+open Combinators.StructureHelpers.ResultEx
+
 module AsyncExtensions =
 
   type IAsyncGate = 
@@ -21,23 +23,9 @@ module AsyncExtensions =
 //              (fun cnl -> ()))
 //          subject :> IObservable<'a>    
     
-  type Microsoft.FSharp.Control.Async with
-       
-    static member Callcc (f: ('a -> Async<'b>) -> Async<'a>) : Async<'a> =
-        Async.FromContinuations(fun (cont, econt, ccont) ->
-            Async.StartWithContinuations(f (fun a -> Async.FromContinuations(fun (_, _, _) -> cont a)), cont, econt, ccont))            
-        
-  //            let sum l =
-  //              let rec sum l = async {
-  //                let! result = callcc (fun exit1 -> async {
-  //                  match l with
-  //                  | [] -> return 0
-  //                  | h::t when h = 2 -> return! exit1 42
-  //                  | h::t -> let! r = sum t
-  //                            return h + r })
-  //                return result }
-  //              Async.RunSynchronously(sum l)
-        
+  // Implements a simple Async.StartDisposable extension that can be used to easily create IObservable values from F# asynchronous workflows.
+  // The method starts an asynchronous workflow and returns IDisposable that cancels the workflow when disposed.
+    type Async with 
     static member AwaitTaskCorrect(task : Task) : Async<unit> =
       Async.FromContinuations(fun (sc,ec,cc) ->
           task.ContinueWith(fun (task:Task) ->
@@ -115,7 +103,7 @@ module AsyncExtensions =
 
     static member Map (map:'a -> 'b) (x:Async<'a>) = async {let! r = x in return map r}
 
-    static member Tap (action:'a -> 'b) (x:Async<'a>) = (Async.Map action x) |> Async.Ignore|> Async.Start; x
+    static member Tap (action:'a -> 'b) (x:Async<'a>) = (Async.map action x) |> Async.Ignore|> Async.Start; x
         
   
     /// Creates an async computation which runs the provided sequence of computations and completes

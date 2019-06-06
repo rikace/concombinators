@@ -189,8 +189,6 @@ namespace ImageDetection
                     return faces.Item1;
                 };
 
-            // TODO : replace one of the F# pipeline using the 
-            //        C# implementation from project /Pipeline 
             var imagePipe =
                 Pipeline.FSharp.Pipeline<string, Image<Bgr, byte>>
                     .Create(imageFn)

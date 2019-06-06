@@ -6,6 +6,8 @@ open System.Threading
 open TamingAgentModule
 open SixLabors.ImageSharp
 open SixLabors.ImageSharp.PixelFormats
+open Combinators.AsyncEx.AsyncCombinators
+
 
 [<AutoOpen>]
 module HelperType =
@@ -20,26 +22,32 @@ module ImageHelpers =
     // The TamingAgent in action for image transformation
     let loadImage = (fun (imagePath:string) -> async {
         let bitmap = Image.Load(imagePath)
+        printfn "Loading image %s - Thread #id: %d" (Path.GetFileNameWithoutExtension(imagePath)) Thread.CurrentThread.ManagedThreadId    
         return { Path = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
                  Name = Path.GetFileName(imagePath)
                  Image = bitmap } })
 
     let apply3D = (fun (imageInfo:ImageInfo) -> async {
         let bitmap = convertImageTo3D imageInfo.Image
+        printfn "Apply 3D image %s - Thread #id: %d" (Path.GetFileNameWithoutExtension(imageInfo.Name)) Thread.CurrentThread.ManagedThreadId    
         return { imageInfo with Image = bitmap } })
 
-    let saveImage = (fun (imageInfo:ImageInfo) -> async {
-        printfn "Saving image %s" imageInfo.Name
-        let destination = Path.Combine(imageInfo.Path, imageInfo.Name)
+    let saveImage = (fun (imageInfo:ImageInfo) -> async {        
+        let destination = Path.Combine(imageInfo.Path, (sprintf "%s_modf.jpg" (Path.GetFileNameWithoutExtension(imageInfo.Name))))
+        printfn "Saving image %s - Thread #id: %d" (Path.GetFileNameWithoutExtension(imageInfo.Name)) Thread.CurrentThread.ManagedThreadId    
         imageInfo.Image.Save(destination)
         return imageInfo.Name})
 
 
 module ``TamingAgent example`` =
 
-    open AsyncEx
+    open Combinators.AsyncEx.AsyncCombinators
     open ImageHelpers
 
+    let run (action : 'a -> unit) (x : Async<'a>) =
+        Async.StartWithContinuations(x, action, ignore, ignore)
+            
+    
     let loadandApply3dImage imagePath = Async.retn imagePath >>= loadImage >>= apply3D >>= saveImage
 
     let loadandApply3dImageAgent = TamingAgent<string, string>(2, loadandApply3dImage)
@@ -47,53 +55,33 @@ module ``TamingAgent example`` =
     let _ = loadandApply3dImageAgent.Subscribe(fun imageName -> printfn "Saved image %s - from subscriber" imageName)
 
     let transformImages() =
-        let images = Directory.GetFiles(@".\Images")
+        let images = Directory.GetFiles(@"./Images")
         for image in images do
             loadandApply3dImageAgent.Ask(image) |> run (fun imageName -> printfn "Saved image %s - from reply back" imageName)
 
 
 module ``Composing TamingAgent with Kleisli operator example`` =
     open Kleisli
-    open AsyncEx
     open ImageHelpers
-    // The TamingAgent with Kleisli operator
-
+        
+    let degreePar = 3        
     
-    let pipelineAgent (limit:int) (operation:'a -> Async<'b>) (job:'a) : Async<_> =
+    let pipelineAgent (limit:int) (operation:'a -> Async<'b>) : ('a -> Async<'b>) =
         let agent = TamingAgent(limit, operation)
-        agent.Ask(job)
-
-    // (‘a -> Async<’b>) -> Async<’a> -> Async<’b>
-    let agentBind f xAsync = async {
-        let! x = xAsync
-        return! f x }
-   
-    let agent1 = pipelineAgent 1 (fun x -> Async.retn( sprintf "Pipeline 1 processing message : %s" x ))
-    let agent2 = pipelineAgent 1 (fun x -> Async.retn( sprintf "Pipeline 2 processing message : %s" x ))
-
-    let message i = sprintf "Message %d sent to the pipeline" i
-
-    for i in [0..5] do
-        agent1 (string i) |> Async.run (fun res -> printfn "%s" res)
-
-
-    let pipelineBind x = Async.retn x >>= agent1 >>= agent2
-
-    for i in [1..10] do
-        pipelineBind (string i)
-        |> Async.run (fun res -> printfn "Thread #id: %d - Msg: %s" Thread.CurrentThread.ManagedThreadId res)    
-    
-    
+        // tamingAgent.PostAndAsyncReply(fun ch -> Ask(value, ch))
+        fun (job: 'a) -> agent.Ask job
+       
     
     // >=>
-    let loadImageAgent = pipelineAgent 2 loadImage
-    let apply3DEffectAgent = pipelineAgent 2 apply3D
-    let saveImageAgent = pipelineAgent 2 saveImage
+    let loadImageAgent = pipelineAgent degreePar loadImage
+    let apply3DEffectAgent = pipelineAgent degreePar apply3D
+    let saveImageAgent = pipelineAgent degreePar saveImage
+    
     
     let pipelineKleisli = loadImageAgent >=> apply3DEffectAgent >=> saveImageAgent
 
     let transformImages() =
-        let images = Directory.GetFiles(@".\Images")
+        let images = Directory.GetFiles(@"./Images")
         for image in images do
             pipelineKleisli image |> run (fun imageName -> printfn "Saved image %s" imageName)
 
@@ -102,7 +90,10 @@ module ``Composing TamingAgent with Kleisli operator example`` =
 [<EntryPoint>]
 let main argv =
 
-    ``TamingAgent example``.transformImages()
+    
+    let images = Directory.GetFiles(@"./Images")
+    
+    //``TamingAgent example``.transformImages()
 
     ``Composing TamingAgent with Kleisli operator example``.transformImages();
 

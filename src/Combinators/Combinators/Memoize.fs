@@ -35,4 +35,5 @@ module Combinators.Memoize
             cache.GetOrAdd(x, fun x -> 
                 cacheTimes.AddOrUpdate(caller, DateTime.UtcNow, fun _ _ ->DateTime.UtcNow)|> ignore
                 f(x) |> Async.StartAsTask
-                ) |> Async.AwaitTask        
+                ) |> Async.AwaitTask
+            

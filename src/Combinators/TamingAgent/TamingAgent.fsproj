@@ -18,7 +18,14 @@
   </ItemGroup>
 
   <ItemGroup>    
+    <ProjectReference Include="..\Combinators\Combinators.fsproj" />    
     <ProjectReference Include="..\Common\Helpers\Helpers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Images\GinevraBenci.jpg" />
+    <Content Include="Images\LadyErmine.jpg" />
+    <Content Include="Images\MonaLisa.jpg" />
   </ItemGroup>
 
 </Project>
