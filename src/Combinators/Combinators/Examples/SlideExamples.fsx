@@ -234,6 +234,8 @@ module TaskParallel =
     
 module PuralyParallel =
     
+    
+    
     let parMap (data : 'a list) (projection : 'a -> 'b) = 0
     
     let sum (ints : int list) = (ints, 0) ||> Seq.foldBack(fun item state -> item + state)

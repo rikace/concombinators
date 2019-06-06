@@ -89,13 +89,10 @@ module ``Composing TamingAgent with Kleisli operator example`` =
 
 [<EntryPoint>]
 let main argv =
-
     
-    let images = Directory.GetFiles(@"./Images")
     
-    //``TamingAgent example``.transformImages()
-
-    ``Composing TamingAgent with Kleisli operator example``.transformImages();
+    ``Composing TamingAgent with Kleisli operator example``.transformImages()
+    
 
     Console.ReadLine() |> ignore
     0
