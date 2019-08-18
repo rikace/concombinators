@@ -11,42 +11,6 @@ let fork (f : 'a -> Task<'a>) =
     return! f x
 }
 
-open System
-open System.Threading
-open System.Threading.Tasks
-let rnd = Random()
-let t1 = Task.Run(fun () -> printfn "Thread #1 %d : - %A" Thread.CurrentThread.ManagedThreadId DateTime.Now) 
-let t2 = fun () -> Task.Run(fun () -> printfn "Thread #1 %d : - %A" Thread.CurrentThread.ManagedThreadId DateTime.Now)
-
-t2()
-
-
-type Async<'T> = 
-  abstract Start : ('T -> unit) -> unit
-  
-module TaskX =
-    type Future<'a> = ('a -> unit) -> unit
-    
-    let inline run (f:'a -> unit) v =
-        fun () -> Task.Run(new Action(fun () -> f v))
-
-        
-let exec (f: unit -> Task) = f()         
-        
-let t4 = TaskX.run (fun () -> printfn "Thread #1 %d : - %A" Thread.CurrentThread.ManagedThreadId DateTime.Now)
-let t5 = TaskX.run (fun i -> printfn "val %d - Thread #1 %d : - %A" (i + 1) Thread.CurrentThread.ManagedThreadId DateTime.Now)
-
-t4() |> exec |> ignore
-
-(t5 41) |> exec |> ignore
-    
-    
-        
-let test (f : Task) =
-   fun () -> f
-
-let t3 = test (Task.Run(fun () -> printfn "Thread #1 %d : - %A" Thread.CurrentThread.ManagedThreadId DateTime.Now))
-t3()
 
 module Seq = 
     let splitAt length (xs: seq<'T>) =

@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Pipelets.fs" />
         <Compile Include="TaskBuilder.fs" />
         <Compile Include="Utilities.fs" />
         <Compile Include="Atom.fs" />
@@ -26,6 +27,9 @@
     <ItemGroup>
       <Compile Include="StructureHelpers\OptionEx.fs" />
       <Compile Include="StructureHelpers\ResultEx.fs" />
+      <Compile Include="StructureHelpers\ImmuableDict.fs" />
+      <Compile Include="StructureHelpers\LinkedList.fs" />
+      <Compile Include="StructureHelpers\EventSourcing.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -54,6 +58,8 @@
       <Compile Include="AgentEx\ThrottlingAgent.fs" />
       <Compile Include="AgentEx\AgentMapReduce.fs" />
       <Compile Include="AgentEx\AgentParDegree.fs" />
+      <Compile Include="AgentEx\CustomAgent.fs" />
+      <Compile Include="AgentEx\AgentPipeline.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -66,7 +72,7 @@
       <Compile Include="Examples\SumNumbers.fs" />
       <Compile Include="Examples\AsyncHandler.fs" />
       <Compile Include="Examples\Samples.fs" />
-      <None Include="Examples\SlideExamples.fsx" />
+      <Compile Include="Future.fs" />
       <Compile Include="Program.fs" />
     </ItemGroup>
 

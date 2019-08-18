@@ -9,6 +9,7 @@
     <Compile Include="ImagePipeline.fs" />
     <Compile Include="Kleisli.fs" />
     <Compile Include="TamingAgent.fs" />
+    <Compile Include="DistributedAgents.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

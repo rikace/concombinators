@@ -26,6 +26,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StockAnalyzer", "Common\Sto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleTaskEx", "Pipeline\ConsoleTaskEx\ConsoleTaskEx.csproj", "{4470681E-B934-467F-BA4D-579F0AE36FF1}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Channels", "Channels\Channels.fsproj", "{B4490A1E-9CD9-4294-8906-140BDBC04584}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CspChannel", "CspChannel\CspChannel.csproj", "{6DBDE9FA-15BC-4AB2-90F4-723C49222689}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +80,14 @@ Global
 		{4470681E-B934-467F-BA4D-579F0AE36FF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4470681E-B934-467F-BA4D-579F0AE36FF1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4470681E-B934-467F-BA4D-579F0AE36FF1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4490A1E-9CD9-4294-8906-140BDBC04584}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4490A1E-9CD9-4294-8906-140BDBC04584}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4490A1E-9CD9-4294-8906-140BDBC04584}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4490A1E-9CD9-4294-8906-140BDBC04584}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DBDE9FA-15BC-4AB2-90F4-723C49222689}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DBDE9FA-15BC-4AB2-90F4-723C49222689}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DBDE9FA-15BC-4AB2-90F4-723C49222689}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DBDE9FA-15BC-4AB2-90F4-723C49222689}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{B59E90E8-F191-4DF1-A6F8-B95D86ACD919} = {58052E5E-4AF1-4CA1-A49B-941503EBE64C}

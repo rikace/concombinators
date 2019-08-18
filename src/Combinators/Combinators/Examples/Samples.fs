@@ -9,6 +9,94 @@ open Combinators.Atom
 open FSharp.Parallelx.ContextInsensitive
 open System.Collections.Immutable
 
+open System
+open System.IO
+open System.Xml
+open System.Text
+open System.Net
+open System.Globalization
+
+
+module Seq =
+    let unsort xs =
+        let rand = System.Random(Seed=0)
+        xs
+        |> Seq.map (fun x -> rand.Next(),x)
+        |> Seq.cache
+        |> Seq.sortBy fst
+        |> Seq.map snd
+        
+let makeUrl symbol (dfrom:DateTime) (dto:DateTime) = 
+    //Uses the not-so-known chart-data:
+    let monthfix (d:DateTime)= (d.Month-1).ToString()
+    new Uri("http://ichart.finance.yahoo.com/table.csv?s=" + symbol +
+        "&e=" + dto.Day.ToString() + "&d=" + monthfix(dto) + "&f=" + dto.Year.ToString() +
+        "&g=d&b=" + dfrom.Day.ToString() + "&a=" + monthfix(dfrom) + "&c=" + dfrom.Year.ToString() +
+        "&ignore=.csv")
+
+
+let fetch (url : Uri) = 
+    let req = WebRequest.Create (url) :?> HttpWebRequest
+    use stream = req.GetResponse().GetResponseStream()
+    use reader = new StreamReader(stream)
+    reader.ReadToEnd()
+
+let reformat (response:string) = 
+    let split (mark:char) (data:string) = 
+        data.Split(mark) |> Array.toList
+    response |> split '\n' 
+    |> List.filter (fun f -> f<>"") 
+    |> List.map (split ',') 
+    
+let getRequest uri = (fetch >> reformat) uri
+
+//Example: Microsoft, from 2010-03-20 to 2010-04-21
+let req = makeUrl "MSFT" (new DateTime(2010, 3, 20)) (new DateTime(2010, 4, 21))  |> getRequest
+
+//val req : string list list =
+//  [["Date"; "Open"; "High"; "Low"; "Close"; "Volume"; "Adj Close"];
+//   ["2010-04-21"; "31.33"; "31.50"; "31.23"; "31.33"; "55343100"; "30.83"];
+//   ["2010-04-20"; "31.22"; "31.44"; "31.13"; "31.36"; "52199500"; "30.86"];
+//   ...
+
+open System
+open System.Threading
+open System.Threading.Tasks
+
+type Async with
+
+    static member RunSynchronously2(workflow : Async<'T>, ?timeout : int, ?cancellationToken : CancellationToken) =
+        let tcs = new TaskCompletionSource<'T>()
+        match timeout with
+        | Some 0 -> raise <| new TimeoutException()
+        | Some t when t < 0 -> invalidArg "timeout" "must be positive."
+        | Some t -> let timer = new Timer((fun _ -> ignore <| tcs.TrySetException(new TimeoutException())), null, t, Timeout.Infinite) in ()
+        | None -> ()
+
+        let start _ = Async.StartWithContinuations(workflow, 
+                                                    ignore << tcs.TrySetResult,
+                                                    ignore << tcs.TrySetException,
+                                                    (fun _ -> ignore <| tcs.TrySetCanceled ()),
+                                                    ?cancellationToken = cancellationToken)
+
+        if not <| ThreadPool.QueueUserWorkItem(new WaitCallback(start)) then invalidOp "Could not queue to thread pool." 
+        try tcs.Task.Result 
+        with :? AggregateException as e when e.InnerExceptions.Count = 1 -> raise e.InnerExceptions.[0]
+
+
+
+let stop() = async {
+    printfn "wait"
+    do! Async.Sleep 1000
+    printfn "done"
+}
+
+let run =
+    printfn "wait 2"
+    stop () |> Async.RunSynchronously2
+    printfn "done 2"
+
+
 module String = 
     let mempty = ""
     let mappend x y = sprintf "%s%s" x y
@@ -24,7 +112,10 @@ String.mappend "hello" " world" = (String.ofList ["hello"; " "; "world"])
 
 
 
-
+let myTimeStamp = 
+    let zone = System.TimeZone.CurrentTimeZone.GetUtcOffset System.DateTime.Now
+    let prefix = match (zone<System.TimeSpan.Zero) with | true -> "-" | _ -> "+"
+    System.DateTime.UtcNow.ToString("yyyyMMddHHmmssffff") + prefix + zone.ToString("hhss");
 
 
 module Kleisli =
